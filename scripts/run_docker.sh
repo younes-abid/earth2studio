@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Run the Docker container in interactive mode with GPU support
+docker run -it --rm \
+    --gpus all \
+    --ipc=host \
+    --ulimit memlock=-1 \
+    --ulimit stack=67108864 \
+    -v "$(pwd)/examples:/app/examples" \
+    -v "$(pwd)/data:/app/data" \
+    -v "$(pwd)/scripts:/app/scripts" \
+    earth2studio:latest

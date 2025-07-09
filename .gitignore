@@ -98,3 +98,5 @@ _build
 docs/modules/generated
 docs/modules/backreferences
 docs/examples
+
+data/
