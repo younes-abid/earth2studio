@@ -6,6 +6,8 @@ docker run -it --rm \
     --ipc=host \
     --ulimit memlock=-1 \
     --ulimit stack=67108864 \
+    --shm-size=8g \
+    -p 8888:8888 \
     -v "$(pwd)/examples:/app/examples" \
     -v "$(pwd)/data:/app/data" \
     -v "$(pwd)/scripts:/app/scripts" \

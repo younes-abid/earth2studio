@@ -44,5 +44,14 @@ RUN uv pip install --system --break-system-packages ".[dlwp,corrdiff]"
 # Install Earth2Studio with extra dependencies from the GitHub repository
 # RUN uv pip install --system --break-system-packages "earth2studio[dlwp]@git+https://github.com/NVIDIA/earth2studio.git@0.7.0"
 
+# Install Python packages
+RUN pip install --upgrade pip
 RUN pip install -r requirements_docker.txt
+RUN pip install jupyter==1.1.1
+# Expose the default Jupyter Notebook port
+EXPOSE 8888
+
+# Set environment to avoid permission issues with Jupyter Notebook
+ENV JUPYTER_ALLOW_INSECURE_WRITES=true
+
 CMD ["/bin/bash"]
