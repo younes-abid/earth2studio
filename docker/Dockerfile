@@ -35,12 +35,14 @@ RUN for PIP_CONF in "/etc/xdg/pip/pip.conf" "/root/.pip/pip.conf" "/usr/pip.conf
 # Copy the repository into the container
 COPY . /app
 
-# Install Earth2Studio from the current repository
-RUN uv pip install --system --break-system-packages ".[dlwp]"
+# Set PYTHONPATH to include /app
+ENV PYTHONPATH=/app
 
-# Install Earth2Studio with extra dependencies
+# Install Earth2Studio from the current repository
+RUN uv pip install --system --break-system-packages ".[dlwp,corrdiff]"
+
+# Install Earth2Studio with extra dependencies from the GitHub repository
 # RUN uv pip install --system --break-system-packages "earth2studio[dlwp]@git+https://github.com/NVIDIA/earth2studio.git@0.7.0"
 
-RUN pip install torch==2.5.0 torchvision==0.20.0
-
+RUN pip install -r requirements_docker.txt
 CMD ["/bin/bash"]
