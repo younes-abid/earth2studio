@@ -32,11 +32,15 @@ RUN for PIP_CONF in "/etc/xdg/pip/pip.conf" "/root/.pip/pip.conf" "/usr/pip.conf
         fi; \
     done
 
-# Install Earth2Studio with extra dependencies
-RUN uv pip install --system --break-system-packages "earth2studio[dlwp]@git+https://github.com/NVIDIA/earth2studio.git@0.7.0"
-
-RUN pip install torch==2.5.0 torchvision==0.20.0
 # Copy the repository into the container
 COPY . /app
+
+# Install Earth2Studio from the current repository
+RUN uv pip install --system --break-system-packages ".[dlwp]"
+
+# Install Earth2Studio with extra dependencies
+# RUN uv pip install --system --break-system-packages "earth2studio[dlwp]@git+https://github.com/NVIDIA/earth2studio.git@0.7.0"
+
+RUN pip install torch==2.5.0 torchvision==0.20.0
 
 CMD ["/bin/bash"]
