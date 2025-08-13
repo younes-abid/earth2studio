@@ -2,3 +2,4 @@ torch==2.5.0
 torchvision==0.20.0
 rich==14.0.0 
 cartopy==0.24.1
+jupyter==1.1.1
