@@ -1,0 +1,85 @@
+🎯 Primary Objective
+Build an Earth2Studio inference pipeline for my trained CorrDiff model within 24 hours.
+
+📁 CorrDiff Project Structure (it is in another repo)
+text
+/home/younes.abid/git/physicsnemo/
+├── physicsnemo/                    # Training repository
+├── outputs/checkpoints/           # Model checkpoints (.mdlus, .pt)
+│   ├── regression_model.mdlus
+│   └── diffusion_model.pt
+└── earth2studio/                  # Target inference pipeline
+    └── doc/                       # Documentation we'll create
+🧠 Context & Background
+I've successfully trained a CorrDiff model using NVIDIA's PhysicsNeMo framework. Now I need to:
+
+Set up Earth2Studio correctly
+
+Understand its architecture and workflow
+
+Build an inference pipeline for my specific checkpoints
+
+Run initial tests on sample data
+
+Note I have cloned earth2studio here and prepared a docker solution here /home/younes.abid/git/earth2studio/docker
+I uses these scripts to run it /home/younes.abid/git/earth2studio/scripts
+
+I have this script /home/younes.abid/git/earth2studio/scripts/example.sh it runs this /home/younes.abid/git/earth2studio/examples/04_corrdiff_inference.py inside the docker container after running this
+bash /home/younes.abid/git/earth2studio/scripts/build_docker.sh
+bash /home/younes.abid/git/earth2studio/scripts/run_docker.sh
+then inside the container I run this
+bash scripts/example.sh 
+
+It worked and get all the results no issues
+next step will be to  understand how this is runnig the cordiff checkpoints and use it to run our trained checkpoints saved here /home/younes.abid/git/physicsnemo/outputs/checkpoints
+on our own dataset
+and get the results this is the main goal of this documentation generation
+
+📚 Reference Materials
+https://huggingface.co/collections/nvidia/physicsnemo
+
+https://nvidia.github.io/earth2studio/examples/04_corrdiff_inference.html
+
+https://docs.nvidia.com/nim/earth-2/corrdiff/latest/overview.html
+
+https://build.nvidia.com/explore/climate-weather
+
+https://build.nvidia.com/nvidia/corrdiff 
+
+https://github.com/NVIDIA/earth2studio/blob/main/examples/04_corrdiff_inference.py
+
+https://nvidia.github.io/earth2studio/modules/generated/models/dx/earth2studio.models.dx.CorrDiffCMIP6.html
+
+https://docs.nvidia.com/physicsnemo/latest/physicsnemo/examples/generative/corrdiff/README.html
+
+🎪 Your Role & Expertise
+You are a senior NVIDIA AI/ML engineer with deep expertise in:
+
+Physics-informed neural networks (PhysicsNeMo)
+
+Earth2Studio framework architecture
+
+Climate/weather modeling workflows
+
+CorrDiff model deployment
+
+Pragmatic, production-ready solutions
+
+📋 Documentation Structure Request
+Create this structure under /home/younes.abid/git/earth2studio/doc/:
+
+text
+doc/
+├── setup/
+│   ├── 0-main.md                  # Master table of contents
+│   ├── 1-section/                   # Section 1: 
+│   │   ├── 1.1-subsection....md
+│   │   ├── 1.2-subsection....md
+....
+
+Be pragmatic 
+go staight to the point 
+prepare the 0-main.md for Now
+make it focused and usefull
+use clickable links to the sections
+it is just a table of content nothing else

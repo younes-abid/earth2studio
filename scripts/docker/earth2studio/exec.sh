@@ -1,0 +1,1 @@
+docker exec -it earth2studio_container /bin/bash
