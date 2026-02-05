@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-MAE metric visualization - Mean Absolute Error.
+MAPE metric visualization - Mean Absolute Percentage Error.
 """
 
 import os
@@ -13,14 +13,14 @@ import cartopy.crs as ccrs
 from ..base_metric import BaseMetricPlot
 
 
-class MAEPlot(BaseMetricPlot):
+class MAPEPlot(BaseMetricPlot):
     """
-    Visualizes Mean Absolute Error metric.
+    Visualizes MAPE (Mean Absolute Percentage Error) metric.
     """
     
-    def compute_metric(self, predictions, ground_truth, **kwargs):
+    def compute_metric(self, predictions, ground_truth, epsilon=1e-8, **kwargs):
         """
-        Compute MAE between predictions and ground truth.
+        Compute MAPE between predictions and ground truth.
         
         Parameters
         ----------
@@ -28,36 +28,46 @@ class MAEPlot(BaseMetricPlot):
             Model predictions (ensemble, y, x)
         ground_truth : np.ndarray
             Ground truth values (y, x)
+        epsilon : float
+            Small value to avoid division by zero
             
         Returns
         -------
         dict
-            Dictionary with MAE values
+            Dictionary with MAPE values
         """
         # Calculate ensemble mean
         ensemble_mean = np.mean(predictions, axis=0)
         
-        # Compute MAE for ensemble mean
-        mae_mean = np.mean(np.abs(ensemble_mean - ground_truth))
+        # Avoid division by zero by adding epsilon
+        ground_truth_safe = np.where(np.abs(ground_truth) < epsilon, 
+                                    epsilon, ground_truth)
         
-        # Compute spatial MAE map (for ensemble mean)
-        mae_spatial = np.abs(ensemble_mean - ground_truth)
+        # Compute MAPE for ensemble mean
+        mape_spatial = np.abs((ensemble_mean - ground_truth) / ground_truth_safe) * 100
+        mape_mean = np.mean(mape_spatial)
         
-        # Compute MAE for each ensemble member
-        mae_members = np.mean(np.abs(predictions - ground_truth), axis=(1, 2))
+        # Compute MAPE for each ensemble member
+        mape_members = []
+        for i in range(predictions.shape[0]):
+            member_mape = np.abs((predictions[i] - ground_truth) / ground_truth_safe) * 100
+            mape_members.append(np.mean(member_mape))
+        
+        mape_members = np.array(mape_members)
         
         return {
-            'mae_mean': mae_mean,
-            'mae_spatial': mae_spatial,
-            'mae_members': mae_members,
-            'mae_std': np.std(mae_members),
+            'mape_mean': mape_mean,
+            'mape_spatial': mape_spatial,
+            'mape_members': mape_members,
+            'mape_std': np.std(mape_members),
             'ensemble_mean': ensemble_mean,
-            'ground_truth': ground_truth
+            'ground_truth': ground_truth,
+            'epsilon': epsilon
         }
     
     def plot(self, netcdf_path, time_idx=0, variable_idx=0, **kwargs):
         """
-        Generate MAE visualization plots.
+        Generate MAPE visualization plots.
         
         Parameters
         ----------
@@ -75,18 +85,21 @@ class MAEPlot(BaseMetricPlot):
         str or None
             Path to saved plot file, or None if ground truth not available
         """
-        print(f'🎨 Creating MAE metric plots for time index {time_idx}...')
+        print(f'🎨 Creating MAPE metric plots for time index {time_idx}...')
+        
+        # Get epsilon from config or kwargs
+        epsilon = kwargs.get('epsilon', self.config.PLOT_CORE_METRICS.get('MAPE', {}).get('epsilon', 1e-8))
         
         # Try to load ground truth data
         try:
             with xr.open_dataset(netcdf_path, group='truth') as truth_ds:
                 var_name = self.config.OUTPUT_VARIABLES[variable_idx]
                 if var_name not in truth_ds.data_vars:
-                    print(f'   ⚠️  Ground truth for {var_name} not available, skipping MAE')
+                    print(f'   ⚠️  Ground truth for {var_name} not available, skipping MAPE')
                     return None
                 ground_truth = truth_ds[var_name].isel(time=time_idx).values
         except (OSError, KeyError):
-            print(f'   ⚠️  Ground truth data not available, skipping MAE')
+            print(f'   ⚠️  Ground truth data not available, skipping MAPE')
             return None
         
         # Load prediction data and coordinates
@@ -97,61 +110,66 @@ class MAEPlot(BaseMetricPlot):
             # Get coordinates
             lat_2d, lon_2d = self._get_coordinates(ds)
         
-        # Compute MAE metrics
-        metrics = self.compute_metric(predictions, ground_truth)
+        # Compute MAPE metrics
+        metrics = self.compute_metric(predictions, ground_truth, epsilon=epsilon)
         
         # Create subplot layout
         projection = ccrs.PlateCarree() if self.config.USE_CARTOPY else None
         fig, axes = plt.subplots(1, 2, figsize=(15, 6), subplot_kw={'projection': projection})
         
-        # Plot 1: Spatial MAE map
+        # Plot 1: Spatial MAPE map
+        # Cap extreme values for better visualization
+        mape_spatial_capped = np.clip(metrics['mape_spatial'], 0, np.percentile(metrics['mape_spatial'], 95))
+        
         if self.config.USE_CARTOPY:
             self._setup_geographic_axes(axes[0])
-            im1 = axes[0].pcolormesh(lon_2d, lat_2d, metrics['mae_spatial'], 
-                                    transform=ccrs.PlateCarree(), cmap='plasma')
+            im1 = axes[0].pcolormesh(lon_2d, lat_2d, mape_spatial_capped, 
+                                    transform=ccrs.PlateCarree(), cmap='hot')
         else:
-            im1 = axes[0].imshow(metrics['mae_spatial'], cmap='plasma', origin='lower')
+            im1 = axes[0].imshow(mape_spatial_capped, cmap='hot', origin='lower')
         
-        axes[0].set_title(f'{var_name} - Spatial MAE Map')
-        plt.colorbar(im1, ax=axes[0], shrink=0.8, label='MAE')
+        axes[0].set_title(f'{var_name} - Spatial MAPE Map (%)')
+        plt.colorbar(im1, ax=axes[0], shrink=0.8, label='MAPE (%)')
         
         # Add statistics text
-        axes[0].text(0.02, 0.98, f'Mean MAE: {metrics["mae_mean"]:.4f}', 
+        axes[0].text(0.02, 0.98, f'Mean MAPE: {metrics["mape_mean"]:.2f}%', 
                     transform=axes[0].transAxes, verticalalignment='top',
                     bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
         
-        # Plot 2: MAE distribution across ensemble members
-        axes[1].hist(metrics['mae_members'], bins=min(10, len(metrics['mae_members'])), 
-                    alpha=0.7, edgecolor='black', color='lightcoral')
-        axes[1].axvline(metrics['mae_mean'], color='red', linestyle='--', linewidth=2, 
-                       label=f'Ensemble Mean MAE: {metrics["mae_mean"]:.4f}')
-        axes[1].set_xlabel('MAE Value')
+        # Plot 2: MAPE distribution across ensemble members
+        axes[1].hist(metrics['mape_members'], bins=min(10, len(metrics['mape_members'])), 
+                    alpha=0.7, edgecolor='black', color='orange')
+        axes[1].axvline(metrics['mape_mean'], color='red', linestyle='--', linewidth=2, 
+                       label=f'Ensemble Mean MAPE: {metrics["mape_mean"]:.2f}%')
+        axes[1].set_xlabel('MAPE Value (%)')
         axes[1].set_ylabel('Frequency')
-        axes[1].set_title(f'{var_name} - MAE Distribution')
+        axes[1].set_title(f'{var_name} - MAPE Distribution')
         axes[1].legend()
         axes[1].grid(True, alpha=0.3)
         
         # Add summary statistics
-        stats_text = (f'Mean: {metrics["mae_mean"]:.4f}\n'
-                     f'Std: {metrics["mae_std"]:.4f}\n'
-                     f'Min: {np.min(metrics["mae_members"]):.4f}\n'
-                     f'Max: {np.max(metrics["mae_members"]):.4f}')
+        stats_text = (f'Mean: {metrics["mape_mean"]:.2f}%\n'
+                     f'Std: {metrics["mape_std"]:.2f}%\n'
+                     f'Min: {np.min(metrics["mape_members"]):.2f}%\n'
+                     f'Max: {np.max(metrics["mape_members"]):.2f}%\n'
+                     f'ε: {epsilon:.0e}')
         axes[1].text(0.98, 0.98, stats_text, transform=axes[1].transAxes, 
                     verticalalignment='top', horizontalalignment='right',
                     bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
         
-        plt.suptitle(f'{var_name} - Mean Absolute Error Analysis (Time {time_idx})')
+        plt.suptitle(f'{var_name} - Mean Absolute Percentage Error Analysis (Time {time_idx})')
         plt.tight_layout()
         
         # Save plot
-        filename = f"mae_{var_name}_time{time_idx:03d}_{self.config.TIMESTAMP}"
+        filename = f"mape_{var_name}_time{time_idx:03d}_{self.config.TIMESTAMP}"
         output_path = self._save_plot(fig, filename)
-        print(f'   ✅ MAE plot saved: {os.path.basename(output_path)}')
+        print(f'   ✅ MAPE plot saved: {os.path.basename(output_path)}')
         
         return output_path
     
     def _get_coordinates(self, ds):
         """Helper method to get coordinates from dataset"""
+        # ...existing coordinate loading logic...
         if 'lat' in ds.coords and 'lon' in ds.coords:
             if ds.coords['lat'].ndim == 2:
                 lat_2d = ds.coords['lat'].values

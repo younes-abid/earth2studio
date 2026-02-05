@@ -26,12 +26,16 @@ class EnsembleConfig:
 
         # Data paths
         self.BASE_DATA_PATH = '/app/host/mnt/storage/younes.abid/physicsnemo/data/custom_data_2/'
-        self.DATA_FILE = self.BASE_DATA_PATH + 'ERA5_WRF_combined_concatenated_432/2024-04-30_2024-05-30_21.nc'
+        self.DATA_FILE = self.BASE_DATA_PATH + 'ERA5_WRF_combined_concatenated_432/' + '2022-06-05_2022-11-22_150.nc' 
+        # 2019-01-01_2019-06-09_150.nc  2020-01-06_2020-07-09_150.nc  2020-12-31_2021-06-27_150.nc  2021-12-23_2022-06-04_150.nc  2022-11-23_2023-05-13_150.nc  2023-10-26_2024-04-29_150.nc
+        # 2019-06-10_2020-01-05_150.nc  2020-07-10_2020-12-30_150.nc  2021-06-28_2021-12-22_150.nc  2022-06-05_2022-11-22_150.nc  2023-05-14_2023-10-25_150.nc  2024-04-30_2024-05-30_21.nc   
+        
+        
         self.STATS_FILE = self.BASE_DATA_PATH + 'stats_432/stat.json'
 
         # Variables
         self.INPUT_VARIABLES = ['t_850', 't_500', 'z_850', 'z_500', 'u_850', 'u_500', 'v_850', 'v_500', 'u10', 'v10', 't2m', 'd2m', 'skt', 'sp', 'tcwv', 'tp']
-        self.OUTPUT_VARIABLES = ['Fog_index']
+        self.OUTPUT_VARIABLES = ['Rain_rate_LN','Rain_rate_PT']
 
         # Domain coordinates (adjust to your training domain)
         self.INPUT_GRID = {
@@ -52,7 +56,31 @@ class EnsembleConfig:
         # =============================================================================
 
         # Inference settings
-        self.INFERENCE_TIMES = ['2024-04-30T00:00:00', '2024-05-15T06:00:00']
+        # July 27-29, 2022; Feb 11-13, 2024; March 08-10, 2024;  Apr 15-17, 2024; May 01-02, 2024
+        self.INFERENCE_TIMES = [
+            '2022-07-27T00:00:00', '2022-07-27T01:00:00', '2022-07-27T02:00:00', '2022-07-27T03:00:00',
+            # '2022-07-27T04:00:00', '2022-07-27T05:00:00', '2022-07-27T06:00:00', '2022-07-27T07:00:00',
+            # '2022-07-27T08:00:00', '2022-07-27T09:00:00', '2022-07-27T10:00:00', '2022-07-27T11:00:00',
+            # '2022-07-27T12:00:00', '2022-07-27T13:00:00', '2022-07-27T14:00:00', '2022-07-27T15:00:00',
+            # '2022-07-27T16:00:00', '2022-07-27T17:00:00', '2022-07-27T18:00:00', '2022-07-27T19:00:00',
+            # '2022-07-27T20:00:00', '2022-07-27T21:00:00', '2022-07-27T22:00:00', '2022-07-27T23:00:00',
+            
+            # '2022-07-28T00:00:00', '2022-07-28T01:00:00', '2022-07-28T02:00:00', '2022-07-28T03:00:00',
+            # '2022-07-28T04:00:00', '2022-07-28T05:00:00', '2022-07-28T06:00:00', '2022-07-28T07:00:00',
+            # '2022-07-28T08:00:00', '2022-07-28T09:00:00', '2022-07-28T10:00:00', '2022-07-28T11:00:00',
+            # '2022-07-28T12:00:00', '2022-07-28T13:00:00', '2022-07-28T14:00:00', '2022-07-28T15:00:00',
+            # '2022-07-28T16:00:00', '2022-07-28T17:00:00', '2022-07-28T18:00:00', '2022-07-28T19:00:00',
+            # '2022-07-28T20:00:00', '2022-07-28T21:00:00', '2022-07-28T22:00:00', '2022-07-28T23:00:00',
+            
+            # '2022-07-29T00:00:00', '2022-07-29T01:00:00', '2022-07-29T02:00:00', '2022-07-29T03:00:00',
+            # '2022-07-29T04:00:00', '2022-07-29T05:00:00', '2022-07-29T06:00:00', '2022-07-29T07:00:00',
+            # '2022-07-29T08:00:00', '2022-07-29T09:00:00', '2022-07-29T10:00:00', '2022-07-29T11:00:00',
+            # '2022-07-29T12:00:00', '2022-07-29T13:00:00', '2022-07-29T14:00:00', '2022-07-29T15:00:00',
+            # '2022-07-29T16:00:00', '2022-07-29T17:00:00', '2022-07-29T18:00:00', '2022-07-29T19:00:00',
+            # '2022-07-29T20:00:00', '2022-07-29T21:00:00', '2022-07-29T22:00:00', '2022-07-29T23:00:00'
+        ]
+        
+        # ['2024-04-30T00:00:00', '2024-05-15T06:00:00']
 
         # Ensemble parameters
         self.NUM_ENSEMBLES = 4 # Number of ensemble members to generate
@@ -60,7 +88,7 @@ class EnsembleConfig:
 
         # Sampling configuration
         self.SAMPLING_MODE = 'stochastic'  # 'deterministic' or 'stochastic'
-        self.NUMBER_OF_STEPS = 2          # Number of diffusion sampling steps
+        self.NUMBER_OF_STEPS = 18         # Number of diffusion sampling steps
         self.SOLVER = 'euler'              # Diffusion solver: 'euler' or 'heun'
 
         # High-resolution mean conditioning (recommended for better results)
@@ -86,7 +114,7 @@ class EnsembleConfig:
         self.PLOT_ENSEMBLE_RESIDUALS = True  # Ensemble residuals vs ground truth
         self.PLOT_ENSEMBLE_RESIDUALS_STATISTICS = True  # Statistics of ensemble residuals
         self.PLOT_GROUND_TRUTH_VS_ENSEMBLEMEAN = True  # Ground truth vs ensemble mean comparison
-        self.PLOT_UNCERTAINTY_QUANTIFICATION = True  # Prediction intervals and reliability
+        self.PLOT_UNCERTAINTY_QUANTIFICATION = False  # Prediction intervals and reliability (slow to compute)
 
         # Metrics configuration - Core regression metrics
         self.PLOT_CORE_METRICS = {
