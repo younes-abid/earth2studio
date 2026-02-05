@@ -76,6 +76,9 @@ class EnsembleConfig:
         self.TIMESTAMP = datetime.now().strftime('%Y%m%d_%H%M%S')
         self.OUTPUT_ENSEMBLE_FILE = f'/app/outputs/generation/{self.VARIABLES}/{self.TIMESTAMP}/ensemble_{self.VARIABLES}_{self.TIMESTAMP}.nc'
         self.OUTPUT_ANALYSIS_FOLDER = f'/app/outputs/generation/{self.VARIABLES}/{self.TIMESTAMP}/analysis'
+        self.SAVE_INPUT_VARIABLES = True  # Whether to save input variables in the output file
+        self.SAVE_PREDICTIONS = True  # Whether to save predictions in the output file
+        self.SAVE_GROUND_TRUTH = True  # Whether to save ground truth variables in the output file
 
     def print_config(self):
         """Print configuration summary"""
