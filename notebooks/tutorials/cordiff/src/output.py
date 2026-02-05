@@ -50,29 +50,35 @@ def _create_coordinates(group, ensemble_model, n_times, results, include_ensembl
         ens_var[:] = np.arange(ensemble_model.number_of_samples)
         ens_var.long_name = 'ensemble member'
     
-    # Spatial coordinates - use 2D if available (WRF), otherwise 1D
+    # Spatial coordinates - ALWAYS create as proper coordinate dimensions
     if hasattr(ensemble_model, 'output_lat_2d') and ensemble_model.output_lat_2d is not None:
-        # 2D coordinates for visualization
+        # 2D coordinates for visualization - save as coordinate variables
         lat_var = group.createVariable('lat', 'f4', ('y', 'x'))
         lon_var = group.createVariable('lon', 'f4', ('y', 'x'))
         lat_var[:] = ensemble_model.output_lat_2d
         lon_var[:] = ensemble_model.output_lon_2d
-        lat_var.long_name = 'latitude'
-        lon_var.long_name = 'longitude'
-        lat_var.units = 'degrees_north'
-        lon_var.units = 'degrees_east'
-        lat_var.standard_name = 'latitude'
-        lon_var.standard_name = 'longitude'
+        
+        # Mark as coordinates (this is the key!)
+        lat_var.coordinates = "lat lon"
+        lon_var.coordinates = "lat lon"
     else:
-        # 1D coordinates
+        # 1D coordinates as coordinate variables
         lat_var = group.createVariable('lat', 'f4', ('y',))
         lon_var = group.createVariable('lon', 'f4', ('x',))
         lat_var[:] = ensemble_model.output_lat
         lon_var[:] = ensemble_model.output_lon
-        lat_var.long_name = 'latitude'
-        lon_var.long_name = 'longitude'
-        lat_var.units = 'degrees_north'
-        lon_var.units = 'degrees_east'
+        
+        # Mark as coordinates
+        lat_var.coordinates = "lat lon"
+        lon_var.coordinates = "lat lon"
+    
+    # Add proper coordinate metadata
+    lat_var.long_name = 'latitude'
+    lon_var.long_name = 'longitude'
+    lat_var.units = 'degrees_north'
+    lon_var.units = 'degrees_east'
+    lat_var.standard_name = 'latitude'
+    lon_var.standard_name = 'longitude'
 
 
 def save_ensemble_netcdf(config, results, ensemble_model, output_path=None):
@@ -143,7 +149,7 @@ def save_ensemble_netcdf(config, results, ensemble_model, output_path=None):
             input_group.createDimension('y', len(ensemble_model.input_lat))
             input_group.createDimension('x', len(ensemble_model.input_lon))
             
-            # Coordinates
+            # Coordinates - Use WRF-consistent coordinate ranges for INPUT group
             time_input = input_group.createVariable('time', 'f8', ('time',))
             lat_input = input_group.createVariable('lat', 'f4', ('y',))
             lon_input = input_group.createVariable('lon', 'f4', ('x',))
@@ -151,8 +157,25 @@ def save_ensemble_netcdf(config, results, ensemble_model, output_path=None):
             time_input[:] = [(t - np.datetime64('1970-01-01T00:00:00')) / np.timedelta64(1, 'h') 
                             for t in results['times']]
             time_input.units = 'hours since 1970-01-01 00:00:00'
-            lat_input[:] = ensemble_model.input_lat
-            lon_input[:] = ensemble_model.input_lon
+            
+            # Create INPUT coordinates that match the WRF coordinate region
+            if hasattr(ensemble_model, 'output_lat_2d') and ensemble_model.output_lat_2d is not None:
+                # Use coordinate ranges from WRF data for INPUT group
+                lat_min = float(ensemble_model.output_lat_2d.min())
+                lat_max = float(ensemble_model.output_lat_2d.max())
+                lon_min = float(ensemble_model.output_lon_2d.min())
+                lon_max = float(ensemble_model.output_lon_2d.max())
+                
+                # Create 1D coordinate arrays that span the same geographic region
+                input_lat_coords = np.linspace(lat_min, lat_max, len(ensemble_model.input_lat))
+                input_lon_coords = np.linspace(lon_min, lon_max, len(ensemble_model.input_lon))
+            else:
+                # Fallback to dummy coordinates if no WRF coords available
+                input_lat_coords = ensemble_model.input_lat
+                input_lon_coords = ensemble_model.input_lon
+            
+            lat_input[:] = input_lat_coords
+            lon_input[:] = input_lon_coords
             lat_input.units = 'degrees_north'
             lon_input.units = 'degrees_east'
             
