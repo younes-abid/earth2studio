@@ -43,6 +43,10 @@ class EnsembleConfig:
             'lon': (116.0, 126.0, 432)  # (min, max, points)
         }
 
+        # Coordinate system configuration
+        self.USE_WRF_COORDINATES = True  # True: use WRF coordinates, False: use INPUT_GRID/OUTPUT_GRID
+        self.WRF_COORD_FILE = '/app/host/home/younes.abid/git/physicsnemo/data/georefrenced/Space42_CorrDiff/trimmed_coordinates_432x432.nc'
+
         # =============================================================================
         # ENSEMBLE PARAMETERS - Key ensemble generation settings
         # =============================================================================
@@ -61,6 +65,12 @@ class EnsembleConfig:
 
         # High-resolution mean conditioning (recommended for better results)
         self.HR_MEAN_CONDITIONING = True
+
+        # Plotting configuration
+        self.VARIABLE_CMAP = "Blues"
+        self.STD_CMAP = "magma"
+        self.VARIABLE_VMIN = 0
+        self.VARIABLE_VMAX = 100
 
         # Output configuration
         self.TIMESTAMP = datetime.now().strftime('%Y%m%d_%H%M%S')

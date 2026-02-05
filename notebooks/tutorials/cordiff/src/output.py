@@ -13,6 +13,27 @@ import xarray as xr
 from datetime import datetime
 
 
+def _load_ground_truth_data(config, requested_times):
+    """Load ground truth data from output group if it exists."""
+    try:
+        # Check if output group exists using netCDF4
+        with nc.Dataset(config.DATA_FILE, 'r') as ds:
+            if "output" not in ds.groups:
+                return None
+        
+        # Load ground truth data
+        with xr.open_dataset(config.DATA_FILE, group="output") as output_ds:
+            truth_data = {}
+            for var_name in config.OUTPUT_VARIABLES:
+                if var_name in output_ds.data_vars:
+                    # Get data for requested times (assuming sample dimension maps to time)
+                    var_data = output_ds[var_name][:len(requested_times)]  # Shape: (time, y, x)
+                    truth_data[var_name] = np.array(var_data)
+            return truth_data if truth_data else None
+    except:
+        return None
+
+
 def save_ensemble_netcdf(config, results, ensemble_model, output_path=None):
     """
     Save ensemble results in PhysicsNeMo-style NetCDF format.
@@ -134,10 +155,30 @@ def save_ensemble_netcdf(config, results, ensemble_model, output_path=None):
             var.units = 'model_units'
         
         # =================================================================
-        # TRUTH GROUP - Ground truth (placeholder for future extension)
+        # TRUTH GROUP - Ground truth (conditional)
         # =================================================================
-        truth_group = f.createGroup('truth')
-        truth_group.description = 'Ground truth data (not available in current setup)'
+        truth_data = _load_ground_truth_data(config, results['times'])
+        if truth_data:
+            truth_group = f.createGroup('truth')
+            truth_group.createDimension('time', n_times)
+            truth_group.createDimension('y', n_lat)
+            truth_group.createDimension('x', n_lon)
+            
+            # Coordinates
+            truth_time = truth_group.createVariable('time', 'f8', ('time',))
+            truth_y = truth_group.createVariable('y', 'f4', ('y',))
+            truth_x = truth_group.createVariable('x', 'f4', ('x',))
+            truth_time[:] = time_var[:]
+            truth_time.units = time_var.units
+            truth_y[:] = ensemble_model.output_lat
+            truth_x[:] = ensemble_model.output_lon
+            
+            # Variables
+            for var_name in config.OUTPUT_VARIABLES:
+                if var_name in truth_data:
+                    truth_var = truth_group.createVariable(var_name, 'f4', ('time', 'y', 'x'), compression='zlib', complevel=4)
+                    truth_var[:] = truth_data[var_name]
+                    truth_var.long_name = f'Ground truth for {var_name}'
     
     print(f'✅ Ensemble results saved to {output_path}')
     return output_path
@@ -164,6 +205,19 @@ def verify_output(output_path):
             print(f'   📊 Input dataset:')
             print(f'   📐 Dimensions: {dict(ds.dims)}')
             print(f'   📋 Variables: {list(ds.data_vars.keys())}')
+        
+        # Check truth group conditionally - it might not exist in production scenarios
+        try:
+            with xr.open_dataset(output_path, group='truth') as ds:
+                print(f'   📊 Truth dataset:')
+                print(f'   📐 Dimensions: {dict(ds.dims)}')
+                print(f'   📋 Variables: {list(ds.data_vars.keys())}')
+                if ds.data_vars:
+                    print(f'   ✅ Ground truth successfully loaded')
+                else:
+                    print(f'   ⚠️  No ground truth variables found')
+        except (OSError, KeyError):
+            print(f'   ℹ️  No truth group found - production scenario without ground truth')
             
     except Exception as e:
         print(f'   ❌ Error verifying file: {e}')
